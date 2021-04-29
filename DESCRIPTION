@@ -1,0 +1,23 @@
+Package: SGMT
+Type: Package
+Title: Temporary package for implementing Sparse Group Multi-Task methods for pleiotropy 
+Version: 1.0
+Date: 2020-08-29
+Authors@R:
+ c(person("Matt","Sutton",role = c("aut", "cre"), email = "matt.sutton@qut.edu.au"),
+   person("Pierre","Sugier",role = "aut"),
+   person("Benoit","Liquet",role = "aut"),
+   person("Jerome", "Friedman", role=c("cph"),comment = c("glmnet structure cross-validation (see cv_method headers)")),
+	 person("Trevor", "Hastie", role=c("cph"),comment = c("glmnet structure (see cv_method headers)")),
+	 person("Rob", "Tibshirani", role=c("cph"),comment = c("glmnet structure (see cv_method headers)")),
+	 person("Balasubramanian", "Narasimhan", role=c("cph"),comment = c("glmnet structure (see cv_method headers)")),
+	 person("Kenneth","Tay",role=c("cph"),comment = c("glmnet structure (see cv_method headers)")),
+	 person("Noah", "Simon", role=c("cph"),comment = c("glmnet structure (see cv_method headers)")),
+	 person("Junyang", "Qian", role=c("cph"),comment = c("glmnet structure (see cv_method headers)")))
+Description: This is a temporary package for the implementation and development of the sparse pleiotropy methods.
+License: GPL-2
+Depends: Matrix (>= 1.0-6), utils, foreach, glmnet
+Imports: Rcpp (>= 1.0.0), RcppNumerical
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen, RcppNumerical
+NeedsCompilation: yes
+Packaged: 2019-05-27 08:40:40 UTC; cmvernier
