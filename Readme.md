@@ -28,7 +28,7 @@ install_github("matt-sutton/SGMT")
 
 The plot below was generated from the example_simulation_run.R code which replicates a single run of the methods on a dataset from scenario 2 of the simulation study from the paper. The top row is the true regression coefficients used to simulate the datasets, other rows correspond to different methods.
 
-![Scenario2](https://github.com/PESugier/SGMT/blob/main/Scenario2.png)
+![Scenario2](https://github.com/matt-sutton/SGMT/blob/main/Scenario2.png)
 
 These results are the estimated coefficients for the selected variables (using bootstrapping as described in the paper) and FDR control for ASSET. 
 
