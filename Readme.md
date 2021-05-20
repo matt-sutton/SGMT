@@ -26,11 +26,11 @@ install_github("matt-sutton/SGMT")
 
 ## Example Code:
 
-The plot below was generated from the example_simulation_run.R code which replicates a single run of the methods on a dataset from scenario 2 of the simulation study from the paper. The top row is the true regression coefficients used to simulate the datasets, other rows correspond to different methods.
+The plot below was generated from the example_simulation_run.R code which replicates a single run of the methods on a dataset from scenario 2 of the simulation study from the paper. The top row is the true regression coefficients used to simulate the datasets, other rows correspond to different methods. The figure below corresponds to selection using the bootstrap in line with the simulation section of the paper. 
 
-![Scenario2](https://github.com/matt-sutton/SGMT/blob/main/Scenario2.png)
+![Scenario2](https://github.com/matt-sutton/SGMT/blob/main/scenario2_BS_sim.png)
 
-These results are the estimated coefficients for the selected variables (using bootstrapping as described in the paper) and FDR control for ASSET. 
+These results are the estimated coefficients for the selected variables (using bootstrapping as described in the paper from the simulation setting) and FDR control for ASSET. 
 
 
 ## References:
@@ -41,5 +41,5 @@ Coordinate Descent.” *Journal of Statistical Software, Articles* 39 (5): 1–1
 
 Stephen Boyd, Neal Parikh, Eric Chu., Borja Peleato., Jonathan Eckstein. 2011.
 "Distributed Optimization and Statistical Learning via the Alternating Direction Method of Multipliers."
-*Foundations and Trendsin Machine Learning* 3(1), 1–122.
+*Foundations and Trends in Machine Learning* 3(1), 1–122.
   

@@ -1,4 +1,4 @@
-##%######################################################%##
+############################################################
 #                                                          #
 ####       Code replication example                     ####
 # This code replicates the analysis for a run of the       #
@@ -55,9 +55,9 @@ make_summary_stat = function(X, Y, covar=NULL){
     return(c(co["x", "Estimate"], co["x", "Std. Error"], co["x", "Pr(>|z|)"]))
   })
   
-  summary_stat = t(tmp) %>% as_tibble(rownames = "snp") %>% 
+  summary_stat = t(tmp) %>% as_tibble(rownames = "snp") %>%
     rename(beta=V1, sigma=V2, pval=V3) %>%
-    mutate(z = beta / sigma) %>% 
+    mutate(z = beta / sigma) %>%
     left_join(n_case_control, by=c("snp"))
   
   Sys.time() - t0
@@ -82,7 +82,7 @@ make_summary_stat2 = function(X, Y, covar=NULL){
     return(c(co["x", "Estimate"], co["x", "Std. Error"], co["x", "Pr(>|z|)"]))
   })
   
-  summary_stat = t(tmp) %>% as_tibble(rownames = "snp") %>% 
+  summary_stat = t(tmp) %>% as_tibble(rownames = "snp") %>%
     rename(beta=V1, sigma=V2, pval=V3) %>%
     mutate(z = beta / sigma)
   
@@ -112,7 +112,7 @@ plot_beta = function(beta, groups, main = "Beta") {
 
 
 ##%######################################################%##
-# Simulation setting 
+# Simulation setting
 
 library(doParallel)
 registerDoParallel(cores = 6)
@@ -133,7 +133,7 @@ P <- ncol(X[[1]])
 K <- length(X)
 ngrp <- length(unique(grpvec))
 methods = list()
-  
+
 ## You can use different choices for the weights. Eg the ols solution
 var_weights <- c()
 for(i in 1:P){
@@ -181,21 +181,33 @@ bootR <- foreach ( b = 1:200, .packages = c("parallel","tidyverse","SGMT"), .com
   b_XY <- bootstrap_data(X, Y)
   ## SMT
   resBootStrap = cLogit(b_XY[[1]], b_XY[[2]], ind_weights = var_weights, grp_weights = grp_weights,
-                        lambda=c(methods$SMT$lambda_1se, 0), alpha = 1, 
+                        lambda=c(methods$SMT$lambda_1se, 0), alpha = 1,
                         groups = grpvec, intercept = FALSE)
   # Extract beta and save
-  abs(c(resBootStrap$beta[,,1])) > 1e-12 ## Threshold from 
+  abs(c(resBootStrap$beta[,,1])) > 1e-12 ## Threshold from
 }
 methods$SMT$Inc_prob <- rowMeans(bootR)
 
-## Plot selected using bootstrap 
+## Plot selected using bootstrap (strategy 1)
 inc_var <- which(matrix(methods$SMT$Inc_prob == 1, P, 2), arr.ind = T)
-beta_est <- methods$SMT$beta_1se*0
-beta_est[inc_var] <- methods$SMT$beta_1se[inc_var]
+SMT_beta_est_1 <- methods$SMT$beta_1se*0
+SMT_beta_est_1[inc_var] <- methods$SMT$beta_1se[inc_var]
 
 par(mfrow = c(2,2), mar = c(3,2,2,2))
 plot_beta(true_beta, groups = grpvec)
-plot_beta(beta_est, groups = grpvec, main = "SMT (Selected)")
+plot_beta(SMT_beta_est_1, groups = grpvec, main = "SMT (BS1)")
+par(mfrow = c(1,1))
+
+## Plot selected using bootstrap (strategy 2)
+non_selected <- which(abs(methods$SMT$beta_1se) < 1e-13)
+acc_rate <- max(methods$SMT$Inc_prob[non_selected]) # Max selection rate of non-selected
+inc_var_app <- which(matrix(methods$SMT$Inc_prob > acc_rate, P, 2), arr.ind = T)
+SMT_beta_est_2 <- methods$SMT$beta_1se*0
+SMT_beta_est_2[inc_var_app] <- methods$SMT$beta_1se[inc_var_app]
+
+par(mfrow = c(2,2), mar = c(3,2,2,2))
+plot_beta(true_beta, groups = grpvec)
+plot_beta(SMT_beta_est_2, groups = grpvec, main = "SMT (BS2)")
 par(mfrow = c(1,1))
 
 #### 2.2 GMT ####
@@ -215,26 +227,38 @@ par(mfrow = c(2,2), mar = c(3,2,2,2))
 plot_beta(true_beta, groups = grpvec)
 plot_beta(methods$GMT$beta_1se, groups = grpvec, main = "GMT")
 par(mfrow = c(2,1))
-  
+
 bootR <- foreach ( b = 1:200, .packages = c("parallel","tidyverse","SGMT"), .combine = cbind ) %dopar% {
   b_XY <- bootstrap_data(X, Y)
   ## SMT
   resBootStrap = cLogit(b_XY[[1]], b_XY[[2]], ind_weights = var_weights, grp_weights = grp_weights,
-                        lambda=c(methods$GMT$lambda_1se, 0), alpha = 0, 
+                        lambda=c(methods$GMT$lambda_1se, 0), alpha = 0,
                         groups = grpvec, intercept = FALSE)
   # Extract beta and save
   abs(c(resBootStrap$beta[,,1])) > 1e-12
 }
 methods$GMT$Inc_prob <- rowMeans(bootR)
 
-## Plot selected using bootstrap 
+## Plot selected using bootstrap (strategy 1)
 inc_var <- which(matrix(methods$GMT$Inc_prob == 1, P, 2), arr.ind = T)
-beta_est <- methods$GMT$beta_1se*0
-beta_est[inc_var] <- methods$GMT$beta_1se[inc_var]
+GMT_beta_est_1 <- methods$GMT$beta_1se*0
+GMT_beta_est_1[inc_var] <- methods$GMT$beta_1se[inc_var]
 
 par(mfrow = c(2,2), mar = c(3,2,2,2))
 plot_beta(true_beta, groups = grpvec)
-plot_beta(beta_est, groups = grpvec, main = "GMT (Selected)")
+plot_beta(GMT_beta_est_1, groups = grpvec, main = "GMT (BS1)")
+par(mfrow = c(1,1))
+
+## Plot selected using bootstrap (strategy 2)
+non_selected <- which(abs(methods$GMT$beta_1se) < 1e-13)
+acc_rate <- max(methods$GMT$Inc_prob[non_selected]) # Max selection rate of non-selected
+inc_var_app <- which(matrix(methods$GMT$Inc_prob > acc_rate, P, 2), arr.ind = T)
+GMT_beta_est_2 <- methods$GMT$beta_1se*0
+GMT_beta_est_2[inc_var_app] <- methods$GMT$beta_1se[inc_var_app]
+
+par(mfrow = c(2,2), mar = c(3,2,2,2))
+plot_beta(true_beta, groups = grpvec)
+plot_beta(GMT_beta_est_2, groups = grpvec, main = "GMT (BS2)")
 par(mfrow = c(1,1))
 
 
@@ -262,21 +286,33 @@ bootR <- foreach ( b = 1:200, .packages = c("parallel","tidyverse","SGMT"), .com
   b_XY <- bootstrap_data(X, Y)
   ## SMT
   resBootStrap = cLogit(b_XY[[1]], b_XY[[2]], ind_weights = var_weights, grp_weights = grp_weights,
-                        lambda=c(methods$SGMT$lambda_1se, 0), alpha = methods$SGMT$alpha_1se, 
+                        lambda=c(methods$SGMT$lambda_1se, 0), alpha = methods$SGMT$alpha_1se,
                         groups = grpvec, intercept = FALSE)
   # Extract beta and save
   abs(c(resBootStrap$beta[,,1])) > 1e-12
 }
 methods$SGMT$Inc_prob <- rowMeans(bootR)
 
-## Plot selected using bootstrap 
+## Plot selected using bootstrap (strategy 1)
 inc_var <- which(matrix(methods$SGMT$Inc_prob == 1, P, 2), arr.ind = T)
-beta_est <- methods$SGMT$beta_1se*0
-beta_est[inc_var] <- methods$SGMT$beta_1se[inc_var]
+SGMT_beta_est_1 <- methods$SGMT$beta_1se*0
+SGMT_beta_est_1[inc_var] <- methods$SGMT$beta_1se[inc_var]
 
 par(mfrow = c(2,2), mar = c(3,2,2,2))
 plot_beta(true_beta, groups = grpvec)
-plot_beta(beta_est, groups = grpvec, main = "SGMT (Selected)")
+plot_beta(SGMT_beta_est_1, groups = grpvec, main = "SGMT (BS1)")
+par(mfrow = c(1,1))
+
+## Plot selected using bootstrap (strategy 2)
+non_selected <- which(abs(methods$SGMT$beta_1se) < 1e-13)
+acc_rate <- max(methods$SGMT$Inc_prob[non_selected]) # Max selection rate of non-selected
+inc_var_app <- which(matrix(methods$SGMT$Inc_prob > acc_rate, P, 2), arr.ind = T)
+SGMT_beta_est_2 <- methods$SGMT$beta_1se*0
+SGMT_beta_est_2[inc_var_app] <- methods$SGMT$beta_1se[inc_var_app]
+
+par(mfrow = c(2,2), mar = c(3,2,2,2))
+plot_beta(true_beta, groups = grpvec)
+plot_beta(SGMT_beta_est_2, groups = grpvec, main = "SGMT (BS2)")
 par(mfrow = c(1,1))
 
 
@@ -288,17 +324,17 @@ cat("\nStart ASSET \n")
 t0 = Sys.time()
 summary_stat_S1 = make_summary_stat(X[[1]], Y[[1]])
 summary_stat_S2 = make_summary_stat(X[[2]], Y[[2]])
-beta = as.matrix(data.frame(Study1 = summary_stat_S1$beta, 
-                            Study2 = summary_stat_S2$beta, 
+beta = as.matrix(data.frame(Study1 = summary_stat_S1$beta,
+                            Study2 = summary_stat_S2$beta,
                             row.names = summary_stat_S1$snp))
-sigma = as.matrix(data.frame(Study1 = summary_stat_S1$sigma, 
-                             Study2 = summary_stat_S2$sigma, 
+sigma = as.matrix(data.frame(Study1 = summary_stat_S1$sigma,
+                             Study2 = summary_stat_S2$sigma,
                              row.names = summary_stat_S1$snp))
-case = as.matrix(data.frame(Study1 = summary_stat_S1$ncase, 
-                            Study2 = summary_stat_S2$ncase, 
+case = as.matrix(data.frame(Study1 = summary_stat_S1$ncase,
+                            Study2 = summary_stat_S2$ncase,
                             row.names = summary_stat_S1$snp))
-control = as.matrix(data.frame(Study1 = summary_stat_S1$ncontrol, 
-                               Study2 = summary_stat_S2$ncontrol, 
+control = as.matrix(data.frame(Study1 = summary_stat_S1$ncontrol,
+                               Study2 = summary_stat_S2$ncontrol,
                                row.names = summary_stat_S1$snp))
 SNPs = summary_stat_S1$snp
 Study = c("Study1", "Study2")
@@ -332,7 +368,7 @@ annot <- data.frame(snp = ASSET_edit$snp, gene = grpvec)
 res_annot_ASSET=merge(ASSET_edit, annot, by="snp", sort = FALSE)
 
 ## Not Accounting for multiple comparisons
-estimBeta = res_annot_ASSET %>% 
+estimBeta = res_annot_ASSET %>%
   mutate(pheno.p = ifelse(pval < 0.05, pheno.p, "")) %>%
   mutate(pheno.n = ifelse(pval < 0.05, pheno.n, "")) %>%
   mutate(beta_study1 = 0) %>%
@@ -353,7 +389,7 @@ par(mfrow = c(1,1))
 FDR_SNP=p.adjust(res_annot_ASSET$pval, method = 'fdr')
 res_annot_ASSET=cbind(res_annot_ASSET,FDR_SNP)
 
-estimBeta = res_annot_ASSET %>% 
+estimBeta_FDR = res_annot_ASSET %>%
   mutate(pheno.p = ifelse(FDR_SNP < 0.05, pheno.p, "")) %>%
   mutate(pheno.n = ifelse(FDR_SNP < 0.05, pheno.n, "")) %>%
   mutate(beta_study1 = 0) %>%
@@ -366,31 +402,35 @@ estimBeta = res_annot_ASSET %>%
 
 par(mfrow = c(2,2), mar = c(3,2,2,2))
 plot_beta(true_beta, groups = grpvec)
-plot_beta(matrix(estimBeta,P,2), groups = grpvec, main = "ASSET (Selected)")
+plot_beta(matrix(estimBeta_FDR,P,2), groups = grpvec, main = "ASSET (Selected)")
 par(mfrow = c(1,1))
 
-
-## Compare All Methods (Selected)
+## Compare All Methods --- Bootstrap sampling strategy 1 (simulation)
 par(mfrow = c(5,2), mar = c(3,2,2,2))
 plot_beta(true_beta, groups = grpvec)
 ## SGMT
-inc_var <- which(matrix(methods$SGMT$Inc_prob == 1, P, 2), arr.ind = T)
-beta_est <- methods$SGMT$beta_1se*0
-beta_est[inc_var] <- methods$SGMT$beta_1se[inc_var]
-plot_beta(beta_est, groups = grpvec, main = "SGMT (Selected)")
+plot_beta(SGMT_beta_est_1, groups = grpvec, main = "SGMT (BS1)")
 ## GMT
-inc_var <- which(matrix(methods$GMT$Inc_prob == 1, P, 2), arr.ind = T)
-beta_est <- methods$GMT$beta_1se*0
-beta_est[inc_var] <- methods$GMT$beta_1se[inc_var]
-plot_beta(beta_est, groups = grpvec, main = "GMT (Selected)")
+plot_beta(GMT_beta_est_1, groups = grpvec, main = "GMT (BS1)")
 ## SMT
-inc_var <- which(matrix(methods$SMT$Inc_prob == 1, P, 2), arr.ind = T)
-beta_est <- methods$SMT$beta_1se*0
-beta_est[inc_var] <- methods$SMT$beta_1se[inc_var]
-plot_beta(beta_est, groups = grpvec, main = "SMT (Selected)")
+plot_beta(SMT_beta_est_1, groups = grpvec, main = "SMT (BS1)")
 ## ASSET
-plot_beta(matrix(estimBeta,P,2), groups = grpvec, main = "ASSET (Selected)")
+plot_beta(matrix(estimBeta_FDR,P,2), groups = grpvec, main = "ASSET (FDR)")
 par(mfrow = c(1,1))
+
+## Compare All Methods  --- Bootstrap sampling strategy 2 (application)
+par(mfrow = c(5,2), mar = c(3,2,2,2))
+plot_beta(true_beta, groups = grpvec)
+## SGMT
+plot_beta(SGMT_beta_est_2, groups = grpvec, main = "SGMT (BS2)")
+## GMT
+plot_beta(GMT_beta_est_2, groups = grpvec, main = "GMT (BS2)")
+## SMT
+plot_beta(SMT_beta_est_2, groups = grpvec, main = "SMT (BS2)")
+## ASSET
+plot_beta(matrix(estimBeta_FDR,P,2), groups = grpvec, main = "ASSET (FDR)")
+par(mfrow = c(1,1))
+
 
 #save.image("example_run.Rdata")
 
@@ -407,4 +447,3 @@ plot_cv(resSMT)
 title("SMT")
 plot_cv(resGMT)
 title("GMT")
-
